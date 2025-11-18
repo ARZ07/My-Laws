@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyLaws – All Laws</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="container">
+      <h1>MyLaws</h1>
+      <p class="subtitle">All laws, stacked in one place (v0)</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="info-box">
+      <p>
+        This is an experimental, read-only listing of laws pulled from public legal data.
+        It is for general information only and is <strong>not legal advice</strong>.
+      </p>
+    </section>
+
+    <section id="laws-container">
+      <div id="loading">Loading laws…</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>
+        Data sourced from public/legal-tech datasets and official bare acts where available.
+        Always verify with the official text.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    async function loadLaws() {
+      const container = document.getElementById("laws-container");
+      const loading = document.getElementById("loading");
+
+      try {
+        const res = await fetch("laws.json");
+        if (!res.ok) {
+          throw new Error("Failed to load laws.json: " + res.status);
+        }
+
+        const laws = await res.json();
+        loading.remove();
+
+        if (!Array.isArray(laws) || laws.length === 0) {
+          container.innerHTML = "<p>No laws found in laws.json.</p>";
+          return;
+        }
+
+        // Group by Act (optional – just makes it cleaner)
+        const byAct = {};
+        for (const law of laws) {
+          const actName = law.act || "Unknown Act";
+          if (!byAct[actName]) byAct[actName] = [];
+          byAct[actName].push(law);
+        }
+
+        Object.keys(byAct).forEach((actName) => {
+          const actSection = document.createElement("section");
+          actSection.className = "act-block";
+
+          const actHeader = document.createElement("h2");
+          actHeader.textContent = actName;
+          actSection.appendChild(actHeader);
+
+          const sectionList = document.createElement("div");
+          sectionList.className = "section-list";
+
+          byAct[actName].forEach((law) => {
+            const card = document.createElement("article");
+            card.className = "section-card";
+
+            const heading = document.createElement("h3");
+            const sectionNumber = law.section ? `Section ${law.section}: ` : "";
+            heading.textContent = sectionNumber + (law.heading || "");
+            card.appendChild(heading);
+
+            if (law.text) {
+              const textPara = document.createElement("p");
+              textPara.textContent = law.text;
+              card.appendChild(textPara);
+            }
+
+            sectionList.appendChild(card);
+          });
+
+          actSection.appendChild(sectionList);
+          container.appendChild(actSection);
+        });
+      } catch (err) {
+        console.error(err);
+        loading.textContent = "Error loading laws. Please check the console and laws.json.";
+      }
+    }
+
+    loadLaws();
+  </script>
+</body>
+</html>
